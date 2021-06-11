@@ -27,7 +27,7 @@ ext.buildNumber = System.getenv().BUILD_NUMBER ?: "Dev"
 repositories {
     maven {
         name = 'forge'
-        url = 'http://files.minecraftforge.net/maven'
+        url = 'https://files.minecraftforge.net/maven'
     }
     maven {
     	name = 'sponge'
