@@ -8,7 +8,6 @@
     "MinecraftServerMixin",
     "PlayerManagerMixin",
     "ServerPlayerEntityMixin",
-    "ServerPlayNetworkHandlerMixin",
     "ThreadedAnvilChunkStorageAccessor",
     "ThreadedAnvilChunkStorageMixin",
     "WorldChunkMixin"
