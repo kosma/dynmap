@@ -12,6 +12,7 @@ dependencies {
 }
 
 processResources {
+	duplicatesStrategy = 'include'
     // replace stuff in mcmod.info, nothing else
 	from('src/main/resources') {
 	    include 'core.yml'
