@@ -42,6 +42,7 @@ dependencies {
 
 processResources {
     inputs.property "version", project.version
+    duplicatesStrategy = 'include'
 
     from(sourceSets.main.resources.srcDirs) {
         include "fabric.mod.json"
@@ -69,6 +70,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 }
 
 jar {
+    duplicatesStrategy = 'include'
     from "LICENSE"
     from {
         configurations.shadow.collect { it.toString().contains("guava") ? null : it.isDirectory() ? it : zipTree(it) }
