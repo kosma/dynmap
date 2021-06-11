@@ -23,7 +23,7 @@ public class ServerPlayerEntityMixin {
     @Inject(method = "moveToWorld", at = @At("RETURN"))
     public void moveToWorld(ServerWorld destination, CallbackInfoReturnable<Entity> info) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (!player.removed) {
+        if (player.getRemovalReason() == null) {
             PlayerEvents.PLAYER_CHANGED_DIMENSION.invoker().onPlayerChangedDimension(player);
         }
     }
