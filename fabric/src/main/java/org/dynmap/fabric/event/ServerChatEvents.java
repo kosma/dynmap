@@ -2,7 +2,7 @@ package org.dynmap.fabric.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public class ServerChatEvents {
     private ServerChatEvents() {
@@ -18,6 +18,6 @@ public class ServerChatEvents {
 
     @FunctionalInterface
     public interface ServerChatCallback {
-        void onChatMessage(ServerPlayerEntity player, String message);
+        void onChatMessage(ServerPlayer player, String message);
     }
 }

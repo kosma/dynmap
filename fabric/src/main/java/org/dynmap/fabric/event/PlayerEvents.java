@@ -2,7 +2,7 @@ package org.dynmap.fabric.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public class PlayerEvents {
     private PlayerEvents() {
@@ -42,21 +42,21 @@ public class PlayerEvents {
 
     @FunctionalInterface
     public interface PlayerLoggedIn {
-        void onPlayerLoggedIn(ServerPlayerEntity player);
+        void onPlayerLoggedIn(ServerPlayer player);
     }
 
     @FunctionalInterface
     public interface PlayerLoggedOut {
-        void onPlayerLoggedOut(ServerPlayerEntity player);
+        void onPlayerLoggedOut(ServerPlayer player);
     }
 
     @FunctionalInterface
     public interface PlayerChangedDimension {
-        void onPlayerChangedDimension(ServerPlayerEntity player);
+        void onPlayerChangedDimension(ServerPlayer player);
     }
 
     @FunctionalInterface
     public interface PlayerRespawn {
-        void onPlayerRespawn(ServerPlayerEntity player);
+        void onPlayerRespawn(ServerPlayer player);
     }
 }

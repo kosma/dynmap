@@ -2,31 +2,31 @@ package org.dynmap.fabric_1_16_4;
 
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.FluidBlock;
+import net.minecraft.Util;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.network.MessageType;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesPacket;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ChunkHolder;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.server.world.ThreadedAnvilChunkStorage;
-import net.minecraft.text.LiteralText;
-import net.minecraft.util.Util;
-import net.minecraft.util.collection.PackedIntegerArray;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.ChunkSerializer;
-import net.minecraft.world.EmptyBlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.BitStorage;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.storage.ChunkSerializer;
 import org.dynmap.common.chunk.GenericBitStorage;
 import org.dynmap.common.chunk.GenericNBTCompound;
 import org.dynmap.common.chunk.GenericNBTList;
@@ -48,81 +48,81 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
     }
 
     @Override
-    public float[] World_getBrightnessTable(World world) {
+    public float[] World_getBrightnessTable(Level world) {
         float brightnessTable[] = new float[16];
         for (int i=0; i<16; i++) {
-            brightnessTable[i] = world.getDimension().method_28516(i);
+            brightnessTable[i] = world.dimensionType().brightness(i);
         }
         return brightnessTable;
     }
 
     @Override
-    public GenericNBTCompound ThreadedAnvilChunkStorage_getGenericNbt(ThreadedAnvilChunkStorage tacs, ChunkPos chunkPos) throws IOException {
-        return NBTCompound.newOrNull(tacs.getNbt(chunkPos));
+    public GenericNBTCompound ThreadedAnvilChunkStorage_getGenericNbt(ChunkMap tacs, ChunkPos chunkPos) throws IOException {
+        return NBTCompound.newOrNull(tacs.read(chunkPos));
     }
 
     @Override
-    public GenericNBTCompound WorldChunk_getGenericNbt(World world, WorldChunk chunk) {
-        return NBTCompound.newOrNull(ChunkSerializer.serialize((ServerWorld) world, chunk));
+    public GenericNBTCompound WorldChunk_getGenericNbt(Level world, LevelChunk chunk) {
+        return NBTCompound.newOrNull(ChunkSerializer.write((ServerLevel) world, chunk));
     }
 
     @Override
-    public void ServerPlayerEntity_sendMessage(ServerPlayerEntity player, String message) {
-        player.sendSystemMessage(new LiteralText(message), Util.NIL_UUID);
+    public void ServerPlayerEntity_sendMessage(ServerPlayer player, String message) {
+        player.sendMessage(new TextComponent(message), Util.NIL_UUID);
     }
 
     @Override
     public void MinecraftServer_broadcastMessage(MinecraftServer server, String message) {
-        server.getPlayerManager().broadcastChatMessage(new LiteralText(message), MessageType.SYSTEM, Util.NIL_UUID);
+        server.getPlayerList().broadcastMessage(new TextComponent(message), ChatType.SYSTEM, Util.NIL_UUID);
     }
 
     @Override
-    public void ServerPlayerEntity_sendTitleText(ServerPlayerEntity player, String title, String subtitle, int fadeInTicks, int stayTicks, int fadeOutTicks) {
-        player.networkHandler.sendPacket(new TitleS2CPacket(fadeInTicks, stayTicks, fadeOutTicks));
+    public void ServerPlayerEntity_sendTitleText(ServerPlayer player, String title, String subtitle, int fadeInTicks, int stayTicks, int fadeOutTicks) {
+        player.connection.send(new ClientboundSetTitlesPacket(fadeInTicks, stayTicks, fadeOutTicks));
         if (title != null) {
-            player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.TITLE, new LiteralText(title)));
+            player.connection.send(new ClientboundSetTitlesPacket(ClientboundSetTitlesPacket.Type.TITLE, new TextComponent(title)));
         }
         if (subtitle != null) {
-            player.networkHandler.sendPacket(new TitleS2CPacket(TitleS2CPacket.Action.SUBTITLE, new LiteralText(subtitle)));
+            player.connection.send(new ClientboundSetTitlesPacket(ClientboundSetTitlesPacket.Type.SUBTITLE, new TextComponent(subtitle)));
         }
     }
 
     @Override
-    public String World_getDimensionName(World world) {
-        RegistryKey<World> registryKey = world.getRegistryKey();
-        if (registryKey == World.OVERWORLD) {
-            return world.getServer().getSaveProperties().getLevelName();
-        } else if (registryKey == World.END) {
+    public String World_getDimensionName(Level world) {
+        ResourceKey<Level> registryKey = world.dimension();
+        if (registryKey == Level.OVERWORLD) {
+            return world.getServer().getWorldData().getLevelName();
+        } else if (registryKey == Level.END) {
             return "DIM1";
-        } else if (registryKey == World.NETHER) {
+        } else if (registryKey == Level.NETHER) {
             return "DIM-1";
         } else {
-            return registryKey.getValue().getNamespace() + "_" + registryKey.getValue().getPath();
+            return registryKey.location().getNamespace() + "_" + registryKey.location().getPath();
         }
     }
 
     @Override
     public int BlockState_getRawId(BlockState blockState) {
-        return Block.STATE_IDS.getRawId(blockState);
+        return Block.BLOCK_STATE_REGISTRY.getId(blockState);
     }
 
     @Override
-    public boolean World_isNether(World world) {
-        return world.getRegistryKey() == World.NETHER;
+    public boolean World_isNether(Level world) {
+        return world.dimension() == Level.NETHER;
     }
 
     @Override
-    public boolean World_isEnd(World world) {
-        return world.getRegistryKey() == World.END;
+    public boolean World_isEnd(Level world) {
+        return world.dimension() == Level.END;
     }
 
     @Override
-    public String World_getDefaultTitle(World world) {
-        return world.getRegistryKey().getValue().getPath();
+    public String World_getDefaultTitle(Level world) {
+        return world.dimension().location().getPath();
     }
 
     @Override
-    public int World_getMinimumY(World world) {
+    public int World_getMinimumY(Level world) {
         return 0;
     }
 
@@ -133,27 +133,27 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
 
     @Override
     public boolean BlockState_isOpaqueFullCube(BlockState blockState) {
-        return blockState.isOpaqueFullCube(EmptyBlockView.INSTANCE, BlockPos.ORIGIN);
+        return blockState.isSolidRender(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
     }
 
     @Override
     public Optional<GameProfile> MinecraftServer_getProfileByName(MinecraftServer server, String username) {
-        return Optional.of(server.getUserCache().findByName(username));
+        return Optional.of(server.getProfileCache().get(username));
     }
 
     @Override
     public boolean MinecraftServer_isSinglePlayer(MinecraftServer server) {
-        return server.isSinglePlayer();
+        return server.isSingleplayer();
     }
 
     @Override
     public String MinecraftServer_getSinglePlayerName(MinecraftServer server) {
-        return server.getUserName();
+        return server.getSingleplayerName();
     }
 
     @Override
     public Registry<Biome> MinecraftServer_getBiomeRegistry(MinecraftServer server) {
-        return server.getRegistryManager().get(Registry.BIOME_KEY);
+        return server.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
     }
 
     @Override
@@ -163,41 +163,41 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
 
     @Override
     public int Biome_getWaterColor(Biome biome) {
-        return ((BiomeEffectsAccessor) biome.getEffects()).getWaterColor();
+        return ((BiomeEffectsAccessor) biome.getSpecialEffects()).getWaterColor();
     }
 
     @Override
-    public CompletableFuture<Chunk> ChunkHolder_getSavingFuture(ChunkHolder chunk) {
-        return chunk.getSavingFuture();
+    public CompletableFuture<ChunkAccess> ChunkHolder_getSavingFuture(ChunkHolder chunk) {
+        return chunk.getChunkToSave();
     }
 
     @Override
     public Iterator<BlockState> getBlockStateIdsIterator() {
-        return Block.STATE_IDS.iterator();
+        return Block.BLOCK_STATE_REGISTRY.iterator();
     }
 
     @Override
     public boolean BlockState_isWaterlogged(BlockState blockState) {
-        return ((!blockState.getFluidState().isEmpty()) && !(blockState.getBlock() instanceof FluidBlock));
+        return ((!blockState.getFluidState().isEmpty()) && !(blockState.getBlock() instanceof LiquidBlock));
     }
 
     @Override
     public String BlockState_getStateName(BlockState blockState) {
         String statename = "";
-        for (net.minecraft.state.property.Property<?> p : blockState.getProperties()) {
+        for (net.minecraft.world.level.block.state.properties.Property<?> p : blockState.getProperties()) {
             if (statename.length() > 0) {
                 statename += ",";
             }
-            statename += p.getName() + "=" + blockState.get(p).toString();
+            statename += p.getName() + "=" + blockState.getValue(p).toString();
         }
         return statename;
     }
 
     @Override
-    public BlockPos World_getSpawnPos(World world) {
-        return new BlockPos(world.getLevelProperties().getSpawnX(),
-                world.getLevelProperties().getSpawnY(),
-                world.getLevelProperties().getSpawnZ());
+    public BlockPos World_getSpawnPos(Level world) {
+        return new BlockPos(world.getLevelData().getXSpawn(),
+                world.getLevelData().getYSpawn(),
+                world.getLevelData().getZSpawn());
     }
 
     public static class NBTCompound implements GenericNBTCompound {
@@ -210,7 +210,7 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
         }
         @Override
         public Set<String> getAllKeys() {
-            return obj.getKeys();
+            return obj.getAllKeys();
         }
         @Override
         public boolean contains(String s) {
@@ -274,7 +274,7 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
         }
         @Override
         public String getAsString(String s) {
-            return obj.get(s).asString();
+            return obj.get(s).getAsString();
         }
         @Override
         public GenericBitStorage makeBitStorage(int bits, int count, long[] data) {
@@ -308,9 +308,9 @@ public class FabricVersionAdapter implements FabricVersionInterface, ModInitiali
     }
 
     public static class OurBitStorage implements GenericBitStorage {
-        private final PackedIntegerArray bs;
+        private final BitStorage bs;
         public OurBitStorage(int bits, int count, long[] data) {
-            bs = new PackedIntegerArray(bits, count, data);
+            bs = new BitStorage(bits, count, data);
         }
         @Override
         public int get(int idx) {

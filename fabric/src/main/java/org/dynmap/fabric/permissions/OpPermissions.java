@@ -1,11 +1,11 @@
 package org.dynmap.fabric.permissions;
 
-import net.minecraft.entity.player.PlayerEntity;
 import org.dynmap.Log;
 import org.dynmap.fabric.DynmapPlugin;
 
 import java.util.HashSet;
 import java.util.Set;
+import net.minecraft.world.entity.player.Player;
 
 public class OpPermissions implements PermissionProvider {
     public HashSet<String> usrCommands = new HashSet<String>();
@@ -32,7 +32,7 @@ public class OpPermissions implements PermissionProvider {
     }
 
     @Override
-    public boolean has(PlayerEntity psender, String permission) {
+    public boolean has(Player psender, String permission) {
         if (psender != null) {
             if (usrCommands.contains(permission)) {
                 return true;
@@ -43,7 +43,7 @@ public class OpPermissions implements PermissionProvider {
     }
 
     @Override
-    public boolean hasPermissionNode(PlayerEntity psender, String permission) {
+    public boolean hasPermissionNode(Player psender, String permission) {
         if (psender != null) {
             return DynmapPlugin.plugin.isOp(psender.getName().getString());
         }

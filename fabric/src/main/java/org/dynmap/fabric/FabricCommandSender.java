@@ -1,19 +1,19 @@
 package org.dynmap.fabric;
 
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import org.dynmap.common.DynmapCommandSender;
 
 /* Handler for generic console command sender */
 public class FabricCommandSender implements DynmapCommandSender {
-    private ServerCommandSource sender;
+    private CommandSourceStack sender;
 
     protected FabricCommandSender() {
         sender = null;
     }
 
-    public FabricCommandSender(ServerCommandSource send) {
+    public FabricCommandSender(CommandSourceStack send) {
         sender = send;
     }
 
@@ -25,8 +25,8 @@ public class FabricCommandSender implements DynmapCommandSender {
     @Override
     public void sendMessage(String msg) {
         if (sender != null) {
-            Text ichatcomponent = new LiteralText(msg);
-            sender.sendFeedback(ichatcomponent, false);
+            Component ichatcomponent = new TextComponent(msg);
+            sender.sendSuccess(ichatcomponent, false);
         }
     }
 

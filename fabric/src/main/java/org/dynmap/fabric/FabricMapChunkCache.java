@@ -1,25 +1,23 @@
 package org.dynmap.fabric;
 
-import net.minecraft.server.world.ServerChunkManager;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.server.world.ThreadedAnvilChunkStorage;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.ChunkSerializer;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkManager;
 import org.dynmap.DynmapChunk;
 import org.dynmap.Log;
 import org.dynmap.common.chunk.GenericChunk;
 import org.dynmap.common.chunk.GenericMapChunkCache;
 
 import java.util.List;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerChunkCache;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkSource;
 
 /**
  * Container for managing chunks - dependent upon using chunk snapshots, since rendering is off server thread
  */
 public class FabricMapChunkCache extends GenericMapChunkCache {
-    private World world;
-    private ServerChunkManager serverChunkManager;
+    private Level world;
+    private ServerChunkCache serverChunkManager;
 
     /**
      * Construct empty cache
@@ -32,10 +30,10 @@ public class FabricMapChunkCache extends GenericMapChunkCache {
         this.world = dw.getWorld();
         if (dw.isLoaded()) {
             /* Check if world's provider is ServerChunkManager */
-            ChunkManager cp = this.world.getChunkManager();
+            ChunkSource cp = this.world.getChunkSource();
 
-            if (cp instanceof ServerChunkManager) {
-                serverChunkManager = (ServerChunkManager) cp;
+            if (cp instanceof ServerChunkCache) {
+                serverChunkManager = (ServerChunkCache) cp;
             } else {
                 Log.severe(String.format("Error: world %s has unsupported chunk provider", dw.getName()));
             }
@@ -44,11 +42,11 @@ public class FabricMapChunkCache extends GenericMapChunkCache {
     }
 
     protected GenericChunk getLoadedChunk(DynmapChunk chunk) {
-        if (!serverChunkManager.isChunkLoaded(chunk.x, chunk.z))
+        if (!serverChunkManager.hasChunk(chunk.x, chunk.z))
             return null;
 
         try {
-            return parseChunkFromNBT(FabricAdapter.VERSION_SPECIFIC.WorldChunk_getGenericNbt(world, serverChunkManager.getWorldChunk(chunk.x, chunk.z, false)));
+            return parseChunkFromNBT(FabricAdapter.VERSION_SPECIFIC.WorldChunk_getGenericNbt(world, serverChunkManager.getChunk(chunk.x, chunk.z, false)));
         } catch (NullPointerException e) {
             // TODO: find out why this is happening and why it only seems to happen since 1.16.2
             Log.severe("ChunkSerializer.serialize threw a NullPointerException", e);
@@ -58,7 +56,7 @@ public class FabricMapChunkCache extends GenericMapChunkCache {
 
     protected GenericChunk loadChunk(DynmapChunk chunk) {
         try {
-            ThreadedAnvilChunkStorage tacs = serverChunkManager.threadedAnvilChunkStorage;
+            ChunkMap tacs = serverChunkManager.chunkMap;
             ChunkPos chunkPos = new ChunkPos(chunk.x, chunk.z);
             return parseChunkFromNBT(FabricAdapter.VERSION_SPECIFIC.ThreadedAnvilChunkStorage_getGenericNbt(tacs, chunkPos));
         } catch (Exception exc) {

@@ -1,18 +1,18 @@
 package org.dynmap.fabric;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.block.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ChunkHolder;
-import net.minecraft.server.world.ThreadedAnvilChunkStorage;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.dynmap.common.chunk.GenericNBTCompound;
 
 import java.io.IOException;
@@ -25,29 +25,29 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface FabricVersionInterface {
 
-    float[] World_getBrightnessTable(World world);
+    float[] World_getBrightnessTable(Level world);
 
-    GenericNBTCompound ThreadedAnvilChunkStorage_getGenericNbt(ThreadedAnvilChunkStorage tacs, ChunkPos chunkPos) throws IOException;
+    GenericNBTCompound ThreadedAnvilChunkStorage_getGenericNbt(ChunkMap tacs, ChunkPos chunkPos) throws IOException;
 
-    GenericNBTCompound WorldChunk_getGenericNbt(World world, WorldChunk chunk);
+    GenericNBTCompound WorldChunk_getGenericNbt(Level world, LevelChunk chunk);
 
-    void ServerPlayerEntity_sendMessage(ServerPlayerEntity player, String message);
+    void ServerPlayerEntity_sendMessage(ServerPlayer player, String message);
 
     void MinecraftServer_broadcastMessage(MinecraftServer server, String message);
 
-    void ServerPlayerEntity_sendTitleText(ServerPlayerEntity player, String title, String subtitle, int fadeInTicks, int stayTicks, int fadeOutTicks);
+    void ServerPlayerEntity_sendTitleText(ServerPlayer player, String title, String subtitle, int fadeInTicks, int stayTicks, int fadeOutTicks);
 
-    String World_getDimensionName(World world);
+    String World_getDimensionName(Level world);
 
     int BlockState_getRawId(BlockState blockState);
 
-    boolean World_isNether(World world);
+    boolean World_isNether(Level world);
 
-    boolean World_isEnd(World world);
+    boolean World_isEnd(Level world);
 
-    String World_getDefaultTitle(World world);
+    String World_getDefaultTitle(Level world);
 
-    int World_getMinimumY(World world);
+    int World_getMinimumY(Level world);
 
     /* FIXME: Pull this from somewhere in vanilla server? */
     int maxWorldHeight();
@@ -67,7 +67,7 @@ public interface FabricVersionInterface {
 
     int Biome_getWaterColor(Biome biome);
 
-    CompletableFuture<Chunk> ChunkHolder_getSavingFuture(ChunkHolder chunk);
+    CompletableFuture<ChunkAccess> ChunkHolder_getSavingFuture(ChunkHolder chunk);
 
     /* This interface is needed because even though the STATE_IDS field doesn't
        change the name throughout version, it does change its type (due to IdList
@@ -78,6 +78,6 @@ public interface FabricVersionInterface {
 
     String BlockState_getStateName(BlockState blockState);
 
-    BlockPos World_getSpawnPos(World world);
+    BlockPos World_getSpawnPos(Level world);
 
 }

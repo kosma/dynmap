@@ -6,9 +6,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
 import org.dynmap.DynmapLocation;
 import org.dynmap.common.DynmapPlayer;
 
@@ -17,6 +14,9 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Player access abstraction class
@@ -25,16 +25,16 @@ public class FabricPlayer extends FabricCommandSender implements DynmapPlayer {
     private static final Gson GSON = new GsonBuilder().create();
     private final DynmapPlugin plugin;
     // FIXME: Proper setter
-    ServerPlayerEntity player;
+    ServerPlayer player;
     private final String skinurl;
     private final UUID uuid;
 
-    public FabricPlayer(DynmapPlugin plugin, ServerPlayerEntity player) {
+    public FabricPlayer(DynmapPlugin plugin, ServerPlayer player) {
         this.plugin = plugin;
         this.player = player;
         String url = null;
         if (this.player != null) {
-            uuid = this.player.getUuid();
+            uuid = this.player.getUUID();
             GameProfile prof = this.player.getGameProfile();
             if (prof != null) {
                 Property textureProperty = Iterables.getFirst(prof.getProperties().get("textures"), null);
@@ -92,8 +92,8 @@ public class FabricPlayer extends FabricCommandSender implements DynmapPlayer {
             return null;
         }
 
-        Vec3d pos = player.getPos();
-        return new DynmapLocation(plugin.getWorld(player.world).getName(), pos.getX(), pos.getY(), pos.getZ());
+        Vec3 pos = player.position();
+        return new DynmapLocation(plugin.getWorld(player.level).getName(), pos.x(), pos.y(), pos.z());
     }
 
     @Override
@@ -102,8 +102,8 @@ public class FabricPlayer extends FabricCommandSender implements DynmapPlayer {
             return null;
         }
 
-        if (player.world != null) {
-            return plugin.getWorld(player.world).getName();
+        if (player.level != null) {
+            return plugin.getWorld(player.level).getName();
         }
 
         return null;
@@ -112,9 +112,9 @@ public class FabricPlayer extends FabricCommandSender implements DynmapPlayer {
     @Override
     public InetSocketAddress getAddress() {
         if (player != null) {
-            ServerPlayNetworkHandler networkHandler = player.networkHandler;
+            ServerGamePacketListenerImpl networkHandler = player.connection;
             if ((networkHandler != null) && (networkHandler.getConnection() != null)) {
-                SocketAddress sa = networkHandler.getConnection().getAddress();
+                SocketAddress sa = networkHandler.getConnection().getRemoteAddress();
                 if (sa instanceof InetSocketAddress) {
                     return (InetSocketAddress) sa;
                 }
@@ -146,7 +146,7 @@ public class FabricPlayer extends FabricCommandSender implements DynmapPlayer {
     @Override
     public int getArmorPoints() {
         if (player != null) {
-            return player.getArmor();
+            return player.getArmorValue();
         } else {
             return 0;
         }

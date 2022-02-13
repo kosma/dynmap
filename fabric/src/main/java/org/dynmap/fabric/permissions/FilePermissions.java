@@ -1,6 +1,5 @@
 package org.dynmap.fabric.permissions;
 
-import net.minecraft.entity.player.PlayerEntity;
 import org.dynmap.ConfigurationNode;
 import org.dynmap.Log;
 import org.dynmap.fabric.DynmapPlugin;
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.minecraft.world.entity.player.Player;
 
 public class FilePermissions implements PermissionProvider {
     private HashMap<String, Set<String>> perms;
@@ -83,7 +83,7 @@ public class FilePermissions implements PermissionProvider {
     }
 
     @Override
-    public boolean has(PlayerEntity psender, String permission) {
+    public boolean has(Player psender, String permission) {
         if (psender != null) {
             String n = psender.getName().getString().toLowerCase();
             return hasPerm(n, permission);
@@ -92,7 +92,7 @@ public class FilePermissions implements PermissionProvider {
     }
 
     @Override
-    public boolean hasPermissionNode(PlayerEntity psender, String permission) {
+    public boolean hasPermissionNode(Player psender, String permission) {
         if (psender != null) {
             String player = psender.getName().getString().toLowerCase();
             return DynmapPlugin.plugin.isOp(player);

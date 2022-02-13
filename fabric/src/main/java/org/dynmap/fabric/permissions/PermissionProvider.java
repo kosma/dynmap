@@ -1,13 +1,12 @@
 package org.dynmap.fabric.permissions;
 
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.util.Set;
+import net.minecraft.world.entity.player.Player;
 
 public interface PermissionProvider {
-    boolean has(PlayerEntity sender, String permission);
+    boolean has(Player sender, String permission);
 
-    boolean hasPermissionNode(PlayerEntity sender, String permission);
+    boolean hasPermissionNode(Player sender, String permission);
 
     Set<String> hasOfflinePermissions(String player, Set<String> perms);
 

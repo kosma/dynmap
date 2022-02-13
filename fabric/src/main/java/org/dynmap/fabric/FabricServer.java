@@ -3,19 +3,19 @@ package org.dynmap.fabric;
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.block.AbstractSignBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.server.BannedIpList;
-import net.minecraft.server.BannedPlayerList;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.IpBanList;
+import net.minecraft.server.players.PlayerList;
+import net.minecraft.server.players.UserBanList;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SignBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import org.dynmap.DynmapChunk;
 import org.dynmap.DynmapCommonAPIListener;
 import org.dynmap.DynmapWorld;
@@ -75,7 +75,7 @@ public class FabricServer extends DynmapServerInterface {
             Iterator<Biome> iter = biomeRegistry.iterator();
             while (iter.hasNext()) {
                 Biome b = iter.next();
-                int bidx = biomeRegistry.getRawId(b);
+                int bidx = biomeRegistry.getId(b);
                 if (bidx >= biomelist.length) {
                     biomelist = Arrays.copyOf(biomelist, bidx + biomelist.length);
                 }
@@ -92,15 +92,15 @@ public class FabricServer extends DynmapServerInterface {
 
     @Override
     public int isSignAt(String wname, int x, int y, int z) {
-        World world = plugin.getWorldByName(wname).getWorld();
+        Level world = plugin.getWorldByName(wname).getWorld();
 
         BlockPos blockPos = new BlockPos(x, y, z);
         ChunkPos chunkPos = new ChunkPos(blockPos);
-        if (!world.isChunkLoaded(chunkPos.x, chunkPos.z))
+        if (!world.hasChunk(chunkPos.x, chunkPos.z))
             return -1;
 
         Block block = world.getBlockState(blockPos).getBlock();
-        return (block instanceof AbstractSignBlock ? 1 : 0);
+        return (block instanceof SignBlock ? 1 : 0);
     }
 
     @Override
@@ -114,14 +114,14 @@ public class FabricServer extends DynmapServerInterface {
 
     @Override
     public DynmapPlayer[] getOnlinePlayers() {
-        if (server.getPlayerManager() == null) return new DynmapPlayer[0];
+        if (server.getPlayerList() == null) return new DynmapPlayer[0];
 
-        List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
         int playerCount = players.size();
         DynmapPlayer[] dplay = new DynmapPlayer[players.size()];
 
         for (int i = 0; i < playerCount; i++) {
-            ServerPlayerEntity player = players.get(i);
+            ServerPlayer player = players.get(i);
             dplay[i] = plugin.getOrAddPlayer(player);
         }
 
@@ -137,9 +137,9 @@ public class FabricServer extends DynmapServerInterface {
 
     @Override
     public DynmapPlayer getPlayer(String name) {
-        List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
 
-        for (ServerPlayerEntity player : players) {
+        for (ServerPlayer player : players) {
 
             if (player.getName().getString().equalsIgnoreCase(name)) {
                 return plugin.getOrAddPlayer(player);
@@ -151,10 +151,10 @@ public class FabricServer extends DynmapServerInterface {
 
     @Override
     public Set<String> getIPBans() {
-        BannedIpList bl = server.getPlayerManager().getIpBanList();
+        IpBanList bl = server.getPlayerList().getIpBans();
         Set<String> ips = new HashSet<String>();
 
-        for (String s : bl.getNames()) {
+        for (String s : bl.getUserList()) {
             ips.add(s);
         }
 
@@ -188,17 +188,17 @@ public class FabricServer extends DynmapServerInterface {
         if (FabricAdapter.VERSION_SPECIFIC.MinecraftServer_isSinglePlayer(server))
             sn = "Integrated";
         else
-            sn = server.getServerIp();
+            sn = server.getLocalIp();
         if (sn == null) sn = "Unknown Server";
         return sn;
     }
 
     @Override
     public boolean isPlayerBanned(String pid) {
-        PlayerManager scm = server.getPlayerManager();
-        BannedPlayerList bl = scm.getUserBanList();
+        PlayerList scm = server.getPlayerList();
+        UserBanList bl = scm.getBans();
         try {
-            return bl.contains(getProfileByName(pid).get());
+            return bl.isBanned(getProfileByName(pid).get());
         } catch (NoSuchElementException e) {
             /* If this profile doesn't exist, default to "banned" for good measure. */
             return true;
@@ -267,7 +267,7 @@ public class FabricServer extends DynmapServerInterface {
             case SIGN_CHANGE:
                 BlockEvents.SIGN_CHANGE_EVENT.register((world, pos, lines, material, player) -> {
                     plugin.core.processSignChange("fabric", FabricWorld.getWorldName(plugin, world),
-                            pos.getX(), pos.getY(), pos.getZ(), lines, player.getName().asString());
+                            pos.getX(), pos.getY(), pos.getZ(), lines, player.getName().getContents());
                 });
                 break;
 
@@ -424,12 +424,12 @@ public class FabricServer extends DynmapServerInterface {
 
     @Override
     public int getMaxPlayers() {
-        return server.getMaxPlayerCount();
+        return server.getMaxPlayers();
     }
 
     @Override
     public int getCurrentPlayers() {
-        return server.getPlayerManager().getCurrentPlayerCount();
+        return server.getPlayerList().getPlayerCount();
     }
 
     public void tickEvent(MinecraftServer server) {
@@ -525,7 +525,7 @@ public class FabricServer extends DynmapServerInterface {
         if (FabricAdapter.VERSION_SPECIFIC.MinecraftServer_isSinglePlayer(server))
             return "0.0.0.0";
         else
-            return server.getServerIp();
+            return server.getLocalIp();
     }
 
     @Override

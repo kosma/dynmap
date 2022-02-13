@@ -2,11 +2,11 @@ package org.dynmap.fabric.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.block.Material;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.material.Material;
 
 public class BlockEvents {
     private BlockEvents() {
@@ -30,11 +30,11 @@ public class BlockEvents {
 
     @FunctionalInterface
     public interface BlockCallback {
-        void onBlockEvent(World world, BlockPos pos);
+        void onBlockEvent(Level world, BlockPos pos);
     }
 
     @FunctionalInterface
     public interface SignChangeCallback {
-        void onSignChange(ServerWorld world, BlockPos pos, String[] lines, Material material, ServerPlayerEntity player);
+        void onSignChange(ServerLevel world, BlockPos pos, String[] lines, Material material, ServerPlayer player);
     }
 }
