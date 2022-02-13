@@ -1,4 +1,4 @@
-package org.dynmap.fabric_1_18;
+package org.dynmap.fabric_1_18_1;
 
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.api.ModInitializer;
@@ -32,7 +32,7 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.dynmap.common.chunk.GenericBitStorage;
 import org.dynmap.common.chunk.GenericNBTCompound;
 import org.dynmap.common.chunk.GenericNBTList;
-import org.dynmap.fabric_1_18.mixin.BiomeEffectsAccessor;
+import org.dynmap.fabric_1_18_1.mixin.BiomeEffectsAccessor;
 import org.dynmap.fabric.FabricAdapter;
 import org.dynmap.fabric.FabricVersionInterface;
 

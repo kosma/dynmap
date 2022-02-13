@@ -1,4 +1,4 @@
-package org.dynmap.fabric_1_18.mixin;
+package org.dynmap.fabric_1_18_1.mixin;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
